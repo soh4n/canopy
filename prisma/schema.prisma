@@ -1,0 +1,166 @@
+// ============================================================
+// Canopy - Carbon Footprint Awareness Platform
+// Database Schema (Prisma/PostgreSQL)
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// USER - Core profile, auth, scoring, streaks, corporate link
+// ============================================================
+model User {
+  id                  String        @id @default(cuid())
+  email               String        @unique
+  name                String?
+  avatarUrl           String?
+  passwordHash        String        // bcrypt hash
+
+  // Footprint & gamification
+  totalFootprintKg    Float         @default(0)     // Lifetime cumulative CO₂ in kg
+  baselineFootprintKg Float         @default(0)     // Initial onboarding baseline (annual estimate)
+  currentStreak       Int           @default(0)     // Consecutive days logged
+  longestStreak       Int           @default(0)
+  streakShields       Int           @default(1)     // Shields to protect streak
+  lastLoggedAt        DateTime?                      // Last activity log timestamp
+
+  // Corporate / B2B ESG affiliation
+  corporateId         String?
+  corporate           Corporate?    @relation(fields: [corporateId], references: [id])
+
+  // Onboarding state
+  onboardingComplete  Boolean       @default(false)
+  baselineAnswers     Json?                          // Raw JSON from swipe onboarding
+
+  // Timestamps
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  // Relations
+  activityLogs        ActivityLog[]
+  userActions         UserAction[]
+
+  @@index([corporateId])
+  @@index([email])
+}
+
+// ============================================================
+// CORPORATE - B2B ESG reporting entity
+// ============================================================
+model Corporate {
+  id        String   @id @default(cuid())
+  name      String
+  domain    String   @unique                   // e.g. "acme.com" for auto-linking
+  logoUrl   String?
+  createdAt DateTime @default(now())
+
+  users     User[]
+}
+
+// ============================================================
+// ACTIVITY LOG - Individual tracked emissions events
+// Linked to a user; stores raw input + calculated CO₂
+// ============================================================
+model ActivityLog {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Activity classification
+  category      ActivityCategory              // transport, food, energy, shopping
+  activityType  String                        // e.g. "gas_car", "beef_meal", "electricity"
+  
+  // Input data (flexible JSON for various activity shapes)
+  inputData     Json                          // { mode: "gas_car", distance_miles: 15 }
+  
+  // Calculated result
+  co2Kg         Float                         // Resulting kg CO₂ equivalent
+  
+  // Source of data entry
+  source        DataSource  @default(MANUAL)  // manual, plaid, google_maps, auto
+  
+  // Timestamps
+  occurredAt    DateTime    @default(now())   // When the activity happened
+  createdAt     DateTime    @default(now())   // When it was logged
+
+  @@index([userId, occurredAt])
+  @@index([userId, category])
+}
+
+// ============================================================
+// MICRO ACTION - Library of sustainable habits
+// Curated actions users can complete to reduce footprint
+// ============================================================
+model MicroAction {
+  id              String          @id @default(cuid())
+  title           String                          // "Take public transit today"
+  description     String                          // Detailed explanation
+  iconEmoji       String          @default("🌱") // Visual identifier
+  
+  // Impact metrics
+  co2SavingsKg    Float                           // Estimated CO₂ saved per completion
+  difficulty      Difficulty      @default(EASY)  // EASY, MEDIUM, HARD
+  category        ActivityCategory                // Which category this action offsets
+  
+  // Gamification
+  pointsAwarded   Int             @default(10)    // XP/points for completion
+  
+  // Availability
+  isActive        Boolean         @default(true)  // Can be disabled without deletion
+  isDaily         Boolean         @default(true)  // Refreshes daily vs one-time
+  
+  createdAt       DateTime        @default(now())
+
+  // Relations
+  userActions     UserAction[]
+
+  @@index([category, isActive])
+}
+
+// ============================================================
+// USER ACTION - Junction: tracks completed micro-actions
+// ============================================================
+model UserAction {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  microActionId String
+  microAction   MicroAction @relation(fields: [microActionId], references: [id])
+  
+  completedAt   DateTime    @default(now())
+
+  @@index([userId, completedAt])
+  @@index([userId, microActionId])
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum ActivityCategory {
+  TRANSPORT
+  FOOD
+  ENERGY
+  SHOPPING
+  WASTE
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum DataSource {
+  MANUAL
+  PLAID
+  GOOGLE_MAPS
+  AUTO
+}
