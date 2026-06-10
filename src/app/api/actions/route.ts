@@ -6,7 +6,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { CompleteMicroActionSchema } from "@/lib/validations";
+import { ActivityCategory } from "@/generated/prisma";
+import { CompleteMicroActionSchema, ActivityCategoryEnum } from "@/lib/validations";
 import { calculateStreak, calculatePoints } from "@/lib/gamification";
 
 // Prevent static pre-rendering (requires live DB connection)
@@ -30,11 +31,14 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category");
 
     // Fetch active micro-actions
+    const where: { isActive: boolean; category?: ActivityCategory } = { isActive: true };
+    if (category) {
+      const parsed = ActivityCategoryEnum.safeParse(category);
+      if (parsed.success) where.category = parsed.data as ActivityCategory;
+    }
+
     const actions = await prisma.microAction.findMany({
-      where: {
-        isActive: true,
-        ...(category ? { category: category as never } : {}),
-      },
+      where,
       orderBy: [{ difficulty: "asc" }, { co2SavingsKg: "desc" }],
     });
 

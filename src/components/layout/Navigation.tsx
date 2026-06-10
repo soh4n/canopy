@@ -7,22 +7,20 @@
 // Desktop: expanded left sidebar
 // ============================================================
 
-import { useState } from "react";
 import { motion } from "framer-motion";
 
 interface NavItem {
   id: string;
   label: string;
   icon: string;
-  href: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: "home", label: "Home", icon: "🌿", href: "/" },
-  { id: "log", label: "Log", icon: "📝", href: "/log" },
-  { id: "actions", label: "Actions", icon: "⚡", href: "/actions" },
-  { id: "insights", label: "Insights", icon: "📊", href: "/insights" },
-  { id: "tracker", label: "Tracker", icon: "🎯", href: "/tracker" },
+  { id: "home", label: "Home", icon: "🌿" },
+  { id: "log", label: "Log", icon: "📝" },
+  { id: "actions", label: "Actions", icon: "⚡" },
+  { id: "insights", label: "Insights", icon: "📊" },
+  { id: "tracker", label: "Tracker", icon: "🎯" },
 ];
 
 interface NavigationProps {
@@ -31,10 +29,7 @@ interface NavigationProps {
 }
 
 export function Navigation({ activeId = "home", onNavigate }: NavigationProps) {
-  const [active, setActive] = useState(activeId);
-
   const handleNav = (id: string) => {
-    setActive(id);
     onNavigate?.(id);
   };
 
@@ -52,18 +47,18 @@ export function Navigation({ activeId = "home", onNavigate }: NavigationProps) {
               <button
                 onClick={() => handleNav(item.id)}
                 className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors ${
-                  active === item.id
+                  activeId === item.id
                     ? "text-sage-dark"
                     : "text-navy/50 hover:text-navy"
                 }`}
-                aria-current={active === item.id ? "page" : undefined}
+                aria-current={activeId === item.id ? "page" : undefined}
                 aria-label={item.label}
               >
                 <span className="text-xl" aria-hidden="true">
                   {item.icon}
                 </span>
                 <span className="text-[10px] font-medium">{item.label}</span>
-                {active === item.id && (
+                {activeId === item.id && (
                   <motion.div
                     className="absolute -bottom-0 h-0.5 w-6 bg-sage rounded-full"
                     layoutId="nav-indicator-mobile"
@@ -91,18 +86,18 @@ export function Navigation({ activeId = "home", onNavigate }: NavigationProps) {
             key={item.id}
             onClick={() => handleNav(item.id)}
             className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-colors ${
-              active === item.id
+              activeId === item.id
                 ? "bg-sage/10 text-sage-dark"
                 : "text-navy/50 hover:bg-oat hover:text-navy"
             }`}
-            aria-current={active === item.id ? "page" : undefined}
+            aria-current={activeId === item.id ? "page" : undefined}
             aria-label={item.label}
             title={item.label}
           >
             <span className="text-lg" aria-hidden="true">
               {item.icon}
             </span>
-            {active === item.id && (
+            {activeId === item.id && (
               <motion.div
                 className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-sage rounded-full"
                 layoutId="nav-indicator-tablet"
@@ -133,17 +128,17 @@ export function Navigation({ activeId = "home", onNavigate }: NavigationProps) {
               <button
                 onClick={() => handleNav(item.id)}
                 className={`relative flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  active === item.id
+                  activeId === item.id
                     ? "bg-sage/10 text-sage-dark"
                     : "text-navy/60 hover:bg-oat hover:text-navy"
                 }`}
-                aria-current={active === item.id ? "page" : undefined}
+                aria-current={activeId === item.id ? "page" : undefined}
               >
                 <span className="text-lg" aria-hidden="true">
                   {item.icon}
                 </span>
                 {item.label}
-                {active === item.id && (
+                {activeId === item.id && (
                   <motion.div
                     className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-sage rounded-full"
                     layoutId="nav-indicator-desktop"

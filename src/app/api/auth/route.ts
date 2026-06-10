@@ -184,8 +184,7 @@ async function handleLogin(body: unknown) {
   const sessionToken = randomUUID();
 
   // Return user without passwordHash
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { passwordHash: _, ...safeUser } = user;
+  const { passwordHash: _hash, ...safeUser } = user;
 
   return NextResponse.json({
     user: safeUser,

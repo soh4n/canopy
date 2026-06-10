@@ -86,3 +86,8 @@ export const AUTH_RATE_LIMIT: RateLimitConfig = {
   refillRate: 1,
   refillInterval: 6000, // 1 token every 6 seconds
 };
+
+/** @internal Exposed for testing only */
+export function _resetLastCleanup(time: number) {
+  lastCleanup = time;
+}

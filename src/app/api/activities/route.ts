@@ -6,7 +6,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { LogActivitySchema } from "@/lib/validations";
+import { ActivityCategory } from "@/generated/prisma";
+import { LogActivitySchema, ActivityCategoryEnum } from "@/lib/validations";
 import { calculateCO2, type ActivityInput } from "@/lib/carbon-engine";
 import { calculateStreak } from "@/lib/gamification";
 
@@ -143,10 +144,11 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20")));
     const category = searchParams.get("category");
 
-    const where = {
-      userId,
-      ...(category ? { category: category as never } : {}),
-    };
+    const where: { userId: string; category?: ActivityCategory } = { userId };
+    if (category) {
+      const parsed = ActivityCategoryEnum.safeParse(category);
+      if (parsed.success) where.category = parsed.data as ActivityCategory;
+    }
 
     const [activities, total] = await Promise.all([
       prisma.activityLog.findMany({

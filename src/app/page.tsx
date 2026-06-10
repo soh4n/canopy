@@ -20,6 +20,22 @@ import { LogActivityForm } from "@/components/dashboard/LogActivityForm";
 import { AuthScreen } from "@/components/auth/AuthScreen";
 import { useAnnounce } from "@/components/a11y/LiveAnnouncer";
 import { MICRO_ACTIONS } from "@/lib/micro-actions-data";
+import { EMISSION_FACTORS } from "@/lib/carbon-engine";
+
+/**
+ * Baseline calculation factors based on onboarding answers.
+ * Each entry: [emission factor per unit, units per day/trip, days/trips per year]
+ */
+const BASELINE_FACTORS: Record<string, [number, number, number]> = {
+  drives_gas_car: [EMISSION_FACTORS.transport.gas_car, 30, 250],     // 30mi/day, 250 work days
+  takes_public_transit: [EMISSION_FACTORS.transport.bus, 15, 250],    // 15mi/day, 250 work days
+  flies_frequently: [EMISSION_FACTORS.transport.airplane_long, 2000, 4], // 2000mi × 4 flights
+  eats_meat_daily: [EMISSION_FACTORS.food.beef_meal, 1, 365],        // 1 serving/day
+  eats_dairy_daily: [EMISSION_FACTORS.food.dairy, 1, 365],           // 1 serving/day
+  uses_natural_gas: [EMISSION_FACTORS.energy.natural_gas_therm, 1, 500], // 500 therms/yr
+  shops_fast_fashion: [EMISSION_FACTORS.shopping.clothing_item, 1, 52], // 1 item/week
+  buys_electronics_often: [EMISSION_FACTORS.shopping.electronics_small, 1, 6], // 6 items/yr
+};
 
 // Auth user type
 interface AuthUser {
@@ -291,16 +307,14 @@ export default function HomePage() {
   const handleOnboardingComplete = useCallback(
     async (answers: Record<string, boolean>) => {
       let baseline = 0;
-      if (answers["drives_gas_car"]) baseline += 0.404 * 30 * 250;
-      if (answers["takes_public_transit"]) baseline += 0.089 * 15 * 250;
-      if (answers["flies_frequently"]) baseline += 0.195 * 2000 * 4;
-      if (answers["eats_meat_daily"]) baseline += 6.61 * 365;
-      if (answers["eats_dairy_daily"]) baseline += 1.39 * 365;
-      if (answers["lives_in_large_home"]) baseline += 0.417 * 10000;
-      else baseline += 0.417 * 5000;
-      if (answers["uses_natural_gas"]) baseline += 5.3 * 500;
-      if (answers["shops_fast_fashion"]) baseline += 10.0 * 52;
-      if (answers["buys_electronics_often"]) baseline += 25.0 * 6;
+
+      for (const [key, [factor, units, frequency]] of Object.entries(BASELINE_FACTORS)) {
+        if (answers[key]) baseline += factor * units * frequency;
+      }
+
+      // Home energy: large home vs average
+      if (answers["lives_in_large_home"]) baseline += EMISSION_FACTORS.energy.electricity_kwh * 10000;
+      else baseline += EMISSION_FACTORS.energy.electricity_kwh * 5000;
 
       baseline = Math.round(baseline);
 

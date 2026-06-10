@@ -101,15 +101,15 @@ export function calculateCO2(input: ActivityInput): CalculationResult {
   const co2Kg = Math.round(factor * quantity * 1000) / 1000; // 3 decimal precision
 
   // Determine unit label
-  const unitMap: Record<string, string> = {
+  const unitMap: Record<ActivityInput["category"], string> = {
     transport: "miles",
     food: "servings",
-    energy: category === "energy" && activityType.includes("kwh") ? "kWh" : "units",
+    energy: activityType.includes("kwh") ? "kWh" : "units",
     shopping: "items",
     waste: "kg",
   };
 
-  const unit = unitMap[category] || "units";
+  const unit = unitMap[category];
 
   return {
     co2Kg,
